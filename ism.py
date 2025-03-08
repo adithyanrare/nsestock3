@@ -82,17 +82,19 @@ def check_moving_average_conditions(stock_ticker):
         return None, f"Error in moving average conditions for {stock_ticker}: {e}"
 
 # RSI Calculation (Optional: Replace manual with ta.momentum.rsi)
-def calculate_rsi_manual(data, period=14):
-    if len(data) < period + 1:
-        return np.nan
-    delta = np.diff(data)
-    gains = np.where(delta > 0, delta, 0)
-    losses = np.where(delta < 0, -delta, 0)
-    avg_gain = np.mean(gains[-period:])
-    avg_loss = np.mean(losses[-period:])
-    rs = avg_gain / avg_loss if avg_loss != 0 else np.inf
-    rsi = 100 - (100 / (1 + rs))
-    return rsi if np.isfinite(rsi) else 50
+def calculate_rsi_manual(stock_ticker):
+    stock_data = yf.download(stock_ticker, period='59d', interval='15m')
+
+    # Extract closing prices and ensure it is a Pandas Series
+    close_prices = stock_data['Close'].squeeze()  
+
+    # Calculate RSI
+    rsi = ta.momentum.RSIIndicator(close=close_prices, window=14).rsi()
+    
+    # Print only the latest RSI value
+    A=(round(rsi.dropna().iloc[-1], 2))
+    return A # Rounds to 2 decimal places
+
 
 # MACD Crossover
 def check_macd_crossover(data):
@@ -201,7 +203,7 @@ def analyze_stock(stock_ticker):
         close_array = close_array.astype(np.float64)
 
         # Optionally replace manual RSI with ta.momentum.rsi
-        rsi = calculate_rsi_manual(close_array, period=14)
+        rsi = calculate_rsi_manual(stock_ticker)
         # Alternative: rsi = ta.momentum.rsi(data['Close'], window=14).iloc[-1] or 50 if NaN
         rsi_bullish = rsi > 52
 
